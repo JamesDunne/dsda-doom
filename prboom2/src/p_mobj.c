@@ -2527,13 +2527,11 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
     fixed_t qa, qb, qc, qd, vx, vy, pt, bv;
     fixed_t pt0 = 0, pt1 = 0, qa2 = 0, qdp = 0;
 
-    // divide everything by 256 to attempt to stay within 16.16 fixed point bounds
-    // when squaring quantities since 256^2 = 65,536
-    bv = th->info->speed;
-    tx = (dest->x - source->x);
-    ty = (dest->y - source->y);
-    vx = (dest->momx);
-    vy = (dest->momy);
+    bv = th->info->speed >> 8;
+    tx = (dest->x - source->x) >> 8;
+    ty = (dest->y - source->y) >> 8;
+    vx = (dest->momx) >> 8;
+    vy = (dest->momy) >> 8;
 
 #   define sqr(x) FixedMul(( x ), ( x ))
 
@@ -2547,8 +2545,8 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
       qa2 = (2 * qa);
       qdp = FixedSqrt(qd);
 
-      pt0 = FixedDiv(-qb + qdp, qa2);
-      pt1 = FixedDiv(-qb - qdp, qa2);
+      pt0 = FixedDiv(-qb - qdp, qa2);
+      pt1 = FixedDiv(-qb + qdp, qa2);
     } else if (qd == 0) {
       pt = FixedDiv(-qb, (2 * qa));
       pt0 = pt;
@@ -2559,22 +2557,22 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
       pt1 = pt;
     }
 
-    printf("p={%10.5f, %10.5f}, v={%10.5f, %10.5f}, s=%10.5f;  a=%10.5f, b=%10.5f, c=%10.5f, d=%10.5f, √d=%10.5f:  t0=%10.5f, t1=%10.5f\n",
-           tx/65536.0, ty/65536.0,
-           vx/65536.0, vy/65536.0,
-           bv/65536.0,
-           qa/65536.0, qb/65536.0, qc/65536.0, qd/65536.0, qdp/65536.0,
-           pt0/65536.0, pt1/65536.0);
-
     // pick lowest time solution:
     pt = pt0;
     if (pt0 < 0 || (pt1 < pt0 && pt1 >= 0))
       pt = pt1;
 
+    printf("p={%10.5f, %10.5f}, v={%10.5f, %10.5f}, s=%10.5f;  a=%10.5f, b=%10.5f, c=%10.5f, d=%10.5f, √d=%10.5f:  t0=%10.5f, t1=%10.5f; t=%10.5f\n",
+           tx/65536.0, ty/65536.0,
+           vx/65536.0, vy/65536.0,
+           bv/65536.0,
+           qa/65536.0, qb/65536.0, qc/65536.0, qd/65536.0, qdp/65536.0,
+           pt0/65536.0, pt1/65536.0, pt/65536.0);
+
     if (pt > 0) {
       // jsd: todo: clip at walls/things in the way
-      tx = dest->x + FixedMul(pt, vx);
-      ty = dest->y + FixedMul(pt, vy);
+      tx = dest->x + FixedMul(pt, dest->momx);
+      ty = dest->y + FixedMul(pt, dest->momy);
     } else {
       tx = dest->x;
       ty = dest->y;
@@ -2606,10 +2604,11 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
 
   th->momz = (dest->z - source->z) / dist;
 
+#if 0
   // for visualization:
   {
-    for (int i = 0; i < 48; i++) {
-      fixed_t t = Scale(FRACUNIT, i+1, 48);
+    for (int i = 0; i < 32; i++) {
+      fixed_t t = Scale(FRACUNIT, i+1, 32);
       mobj_t *pf;
 
       // projectile along trajectory:
@@ -2631,6 +2630,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
       pf->tics = 31;
     }
   }
+#endif
 
   if (!raven)
   {
