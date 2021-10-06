@@ -1,3 +1,10 @@
+# dsda-doom-experiments
+This is my personal fork of dsda-doom for running experiments. This breaks demo compatibility. DO NOT USE.
+
+The current experiment in place is:
+
+* Monsters launching projectiles will attempt to lead their target to increase chances their projectile hits the target if the target is moving in a constant linear trajectory.
+
 # dsda-doom v0.21.3
 This is a fork of prboom+ with extra tooling for demo recording and playback, with a focus on speedrunning. For builds, discussions, and bug reports, check out the release thread on [doomworld](https://www.doomworld.com/forum/topic/118074/).
 
