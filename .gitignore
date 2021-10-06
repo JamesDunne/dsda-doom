@@ -8,3 +8,5 @@ analysis.txt
 levelstat.txt
 spec/support/wads/*
 !spec/support/wads/analysis_test.wad
+.idea/
+cmake-build-debug/
