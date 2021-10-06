@@ -2485,6 +2485,55 @@ static CONSTFUNC fixed_t FixedSqrt(fixed_t v) {
   return (fixed_t)q;
 }
 
+fixed_t project_frac;
+mobj_t* project_mo;
+
+dboolean PTR_ProjectLocation(intercept_t *in)
+{
+  line_t* li;
+
+  if (!in->isaline)
+    I_Error ("PTR_SlideTraverse: not a line?");
+
+  li = in->d.line;
+
+  if ( ! (li->flags & ML_TWOSIDED) )
+  {
+    if (P_PointOnLineSide (project_mo->x, project_mo->y, li))
+      return true; // don't hit the back side
+    goto isblocking;
+  }
+
+  // set openrange, opentop, openbottom.
+  // These define a 'window' from one sector to another across a line
+
+  P_LineOpening (li);
+
+  if (openrange < project_mo->height)
+    goto isblocking;  // doesn't fit
+
+  if (opentop - project_mo->z < project_mo->height)
+    goto isblocking;  // mobj is too high
+
+  if (openbottom - project_mo->z > 24*FRACUNIT )
+    goto isblocking;  // too big a step up
+
+  // this line doesn't block movement
+
+  return true;
+
+  // the line does block movement,
+  // see if it is closer than best so far
+
+isblocking:
+  if (in->frac < project_frac)
+  {
+    project_frac = in->frac;
+  }
+
+  return false; // stop
+}
+
 //
 // P_SpawnMissile
 //
@@ -2496,6 +2545,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   angle_t an;
   int     dist;
   fixed_t tx, ty;
+  fixed_t pt = 0;
 
   if (!raven)
   {
@@ -2547,7 +2597,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
 
   // jsd: enemies lead their shots against the target
   if (source->flags & MF_COUNTKILL) {
-    fixed_t qa, qb, qc, qd, vx, vy, pt, bv;
+    fixed_t qa, qb, qc, qd, vx, vy, bv;
     fixed_t pt0 = 0, pt1 = 0, qa2 = 0, qdp = 0;
 
     bv = th->info->speed >> 8;
@@ -2585,20 +2635,32 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
     if (pt0 < 0 || (pt1 < pt0 && pt1 >= 0))
       pt = pt1;
 
-    printf("p={%10.5f, %10.5f}, v={%10.5f, %10.5f}, s=%10.5f;  a=%10.5f, b=%10.5f, c=%10.5f, d=%10.5f, √d=%10.5f:  t0=%10.5f, t1=%10.5f; t=%10.5f\n",
+    lprintf(LO_DEBUG, "p={%9.5f, %9.5f}, v={%9.5f, %9.5f}, s=%8.5f;  a=%9.5f, b=%9.5f, c=%10.5f, d=%9.5f, √d=%9.5f:  t0=%11.5f, t1=%11.5f; t=%11.5f\n",
            tx/65536.0, ty/65536.0,
            vx/65536.0, vy/65536.0,
            bv/65536.0,
            qa/65536.0, qb/65536.0, qc/65536.0, qd/65536.0, qdp/65536.0,
            pt0/65536.0, pt1/65536.0, pt/65536.0);
 
-    if (pt > 0) {
-      // jsd: todo: clip at walls/things in the way
+    if (pt <= 0) {
+      // no solution available, so take a wild guess:
+      pt = 50 * FRACUNIT;
+    }
+
+    tx = dest->x + FixedMul(pt, dest->momx);
+    ty = dest->y + FixedMul(pt, dest->momy);
+
+    // jsd: clip player trajectory at walls (not things) in the way
+    project_frac = FRACUNIT+1;
+    project_mo = dest;
+    P_PathTraverse(dest->x, dest->y, tx, ty, PT_ADDLINES, PTR_ProjectLocation);
+    if (FRACUNIT+1 != project_frac) {
+      // project_frac is [0..1] along our line from dest to tx,ty:
+      pt = FixedMul(pt, project_frac);
       tx = dest->x + FixedMul(pt, dest->momx);
       ty = dest->y + FixedMul(pt, dest->momy);
-    } else {
-      tx = dest->x;
-      ty = dest->y;
+      lprintf(LO_DEBUG, "  clipped t=%11.5f\n",
+              pt/65536.0);
     }
   } else {
     tx = dest->x;
