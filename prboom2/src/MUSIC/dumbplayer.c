@@ -69,7 +69,7 @@ const music_player_t db_player =
 #ifdef _MSC_VER
 #define DUMB_OFF_T_CUSTOM __int64
 #else /* !_MSC_VER */
-#define DUMB_OFF_T_CUSTOM off64_t
+#define DUMB_OFF_T_CUSTOM off_t
 #endif /* _MSC_VER */
 #endif
 
