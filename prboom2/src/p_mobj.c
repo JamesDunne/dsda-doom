@@ -2463,6 +2463,29 @@ dboolean P_CheckMissileSpawn (mobj_t* th)
 
 
 //
+// FixedSqrt - used for calculating a square-root of a 16.16 fixed point value
+// only used in P_SpawnMissile
+//
+
+static CONSTFUNC fixed_t FixedSqrt(fixed_t v) {
+  unsigned t, q, b, r;
+  r = v;
+  b = 0x40000000;
+  q = 0;
+  while (b > 0x40) {
+    t = q + b;
+    if (r >= t) {
+      r -= t;
+      q = t + b; // equivalent to q += 2*b
+    }
+    r <<= 1;
+    b >>= 1;
+  }
+  q >>= 8;
+  return (fixed_t)q;
+}
+
+//
 // P_SpawnMissile
 //
 
