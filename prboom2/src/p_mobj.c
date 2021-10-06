@@ -2485,15 +2485,20 @@ static CONSTFUNC fixed_t FixedSqrt(fixed_t v) {
   return (fixed_t)q;
 }
 
-fixed_t project_frac;
 mobj_t* project_mo;
+fixed_t project_frac;
+fixed_t project_z;
 
+//
+// PTR_ProjectLocation - mostly copied from PTR_SlideTraverse
+// used to clip a target's projected location against walls
+//
 dboolean PTR_ProjectLocation(intercept_t *in)
 {
   line_t* li;
 
   if (!in->isaline)
-    I_Error ("PTR_SlideTraverse: not a line?");
+    I_Error ("PTR_ProjectLocation: not a line?");
 
   li = in->d.line;
 
@@ -2512,13 +2517,14 @@ dboolean PTR_ProjectLocation(intercept_t *in)
   if (openrange < project_mo->height)
     goto isblocking;  // doesn't fit
 
-  if (opentop - project_mo->z < project_mo->height)
+  if (opentop - project_z < project_mo->height)
     goto isblocking;  // mobj is too high
 
-  if (openbottom - project_mo->z > 24*FRACUNIT )
+  if (openbottom - project_z > 24*FRACUNIT )
     goto isblocking;  // too big a step up
 
   // this line doesn't block movement
+  project_z = openbottom;
 
   return true;
 
@@ -2526,8 +2532,7 @@ dboolean PTR_ProjectLocation(intercept_t *in)
   // see if it is closer than best so far
 
 isblocking:
-  if (in->frac < project_frac)
-  {
+  if (in->frac < project_frac) {
     project_frac = in->frac;
   }
 
@@ -2544,7 +2549,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   mobj_t* th;
   angle_t an;
   int     dist;
-  fixed_t tx, ty;
+  fixed_t tx, ty, tz;
   fixed_t pt = 0;
 
   if (!raven)
@@ -2649,22 +2654,26 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
 
     tx = dest->x + FixedMul(pt, dest->momx);
     ty = dest->y + FixedMul(pt, dest->momy);
+    tz = dest->z;
 
     // jsd: clip player trajectory at walls (not things) in the way
     project_frac = FRACUNIT+1;
     project_mo = dest;
+    project_z = tz;
     P_PathTraverse(dest->x, dest->y, tx, ty, PT_ADDLINES, PTR_ProjectLocation);
     if (FRACUNIT+1 != project_frac) {
       // project_frac is [0..1] along our line from dest to tx,ty:
       pt = FixedMul(pt, project_frac);
       tx = dest->x + FixedMul(pt, dest->momx);
       ty = dest->y + FixedMul(pt, dest->momy);
+      tz = project_z;
       lprintf(LO_DEBUG, "  clipped t=%11.5f\n",
               pt/65536.0);
     }
   } else {
     tx = dest->x;
     ty = dest->y;
+    tz = dest->z;
   }
 
   an = R_PointToAngle2(source->x, source->y, tx, ty);
@@ -2687,7 +2696,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   if (dist < 1)
     dist = 1;
 
-  th->momz = (dest->z - source->z) / dist;
+  th->momz = (tz - source->z) / dist;
 
 #if 0
   // for visualization:
@@ -2700,19 +2709,19 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
       pf = P_SpawnMobj(
         source->x + FixedMul(tx - source->x, t),
         source->y + FixedMul(ty - source->y, t),
-        source->z + FixedMul(dest->z - source->z, t) + 24 * FRACUNIT,
+        source->z + FixedMul(tz - source->z, t) + 24 * FRACUNIT,
         MT_PUFF);
-      pf->momz = FRACUNIT;
-      pf->tics = 31;
+      pf->momz = 0;
+      pf->tics = 63;
 
       // player along trajectory:
       pf = P_SpawnMobj(
         dest->x + FixedMul(tx - dest->x, t),
         dest->y + FixedMul(ty - dest->y, t),
-        dest->z + 24 * FRACUNIT,
+        dest->z + FixedMul(tz - dest->z, t) + 24 * FRACUNIT,
         MT_PUFF);
-      pf->momz = FRACUNIT;
-      pf->tics = 31;
+      pf->momz = 0;
+      pf->tics = 63;
     }
   }
 #endif
