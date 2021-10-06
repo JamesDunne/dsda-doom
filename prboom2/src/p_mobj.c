@@ -2472,6 +2472,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   mobj_t* th;
   angle_t an;
   int     dist;
+  fixed_t tx, ty;
 
   if (!raven)
   {
@@ -2520,7 +2521,70 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
     S_StartSound(th, th->info->seesound);
 
   P_SetTarget(&th->target, source);    // where it came from
-  an = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
+
+  // jsd: enemies lead their shots against the target
+  if (source->flags & MF_COUNTKILL) {
+    fixed_t qa, qb, qc, qd, vx, vy, pt, bv;
+    fixed_t pt0 = 0, pt1 = 0, qa2 = 0, qdp = 0;
+
+    // divide everything by 256 to attempt to stay within 16.16 fixed point bounds
+    // when squaring quantities since 256^2 = 65,536
+    bv = th->info->speed;
+    tx = (dest->x - source->x);
+    ty = (dest->y - source->y);
+    vx = (dest->momx);
+    vy = (dest->momy);
+
+#   define sqr(x) FixedMul(( x ), ( x ))
+
+    qa = sqr(vx) + sqr(vy) - sqr(bv);
+    qb = 2 * (FixedMul(vx, tx) + FixedMul(vy, ty));
+    qc = sqr(tx) + sqr(ty);
+
+    qd = sqr(qb) - (4 * FixedMul(qa, qc));
+
+    if (qd > 0) {
+      qa2 = (2 * qa);
+      qdp = FixedSqrt(qd);
+
+      pt0 = FixedDiv(-qb + qdp, qa2);
+      pt1 = FixedDiv(-qb - qdp, qa2);
+    } else if (qd == 0) {
+      pt = FixedDiv(-qb, (2 * qa));
+      pt0 = pt;
+      pt1 = pt;
+    } else {
+      pt = 0;
+      pt0 = pt;
+      pt1 = pt;
+    }
+
+    printf("p={%10.5f, %10.5f}, v={%10.5f, %10.5f}, s=%10.5f;  a=%10.5f, b=%10.5f, c=%10.5f, d=%10.5f, √d=%10.5f:  t0=%10.5f, t1=%10.5f\n",
+           tx/65536.0, ty/65536.0,
+           vx/65536.0, vy/65536.0,
+           bv/65536.0,
+           qa/65536.0, qb/65536.0, qc/65536.0, qd/65536.0, qdp/65536.0,
+           pt0/65536.0, pt1/65536.0);
+
+    // pick lowest time solution:
+    pt = pt0;
+    if (pt0 < 0 || (pt1 < pt0 && pt1 >= 0))
+      pt = pt1;
+
+    if (pt > 0) {
+      // jsd: todo: clip at walls/things in the way
+      tx = dest->x + FixedMul(pt, vx);
+      ty = dest->y + FixedMul(pt, vy);
+    } else {
+      tx = dest->x;
+      ty = dest->y;
+    }
+  } else {
+    tx = dest->x;
+    ty = dest->y;
+  }
+
+  an = R_PointToAngle2(source->x, source->y, tx, ty);
 
   // fuzzy player
   if (dest->flags & MF_SHADOW)
@@ -2534,13 +2598,39 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   th->momx = FixedMul(th->info->speed, finecosine[an]);
   th->momy = FixedMul(th->info->speed, finesine[an]);
 
-  dist = P_AproxDistance(dest->x - source->x, dest->y - source->y);
+  dist = P_AproxDistance(tx - source->x, ty - source->y);
   dist = dist / th->info->speed;
 
   if (dist < 1)
     dist = 1;
 
   th->momz = (dest->z - source->z) / dist;
+
+  // for visualization:
+  {
+    for (int i = 0; i < 48; i++) {
+      fixed_t t = Scale(FRACUNIT, i+1, 48);
+      mobj_t *pf;
+
+      // projectile along trajectory:
+      pf = P_SpawnMobj(
+        source->x + FixedMul(tx - source->x, t),
+        source->y + FixedMul(ty - source->y, t),
+        source->z + FixedMul(dest->z - source->z, t) + 24 * FRACUNIT,
+        MT_PUFF);
+      pf->momz = FRACUNIT;
+      pf->tics = 31;
+
+      // player along trajectory:
+      pf = P_SpawnMobj(
+        dest->x + FixedMul(tx - dest->x, t),
+        dest->y + FixedMul(ty - dest->y, t),
+        dest->z + 24 * FRACUNIT,
+        MT_PUFF);
+      pf->momz = FRACUNIT;
+      pf->tics = 31;
+    }
+  }
 
   if (!raven)
   {
