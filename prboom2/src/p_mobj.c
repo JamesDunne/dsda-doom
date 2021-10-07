@@ -57,6 +57,7 @@
 
 #include "dsda.h"
 #include "dsda/map_format.h"
+#include "dsda/settings.h"
 
 #include "heretic/def.h"
 #include "heretic/sb_bar.h"
@@ -2601,7 +2602,7 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   P_SetTarget(&th->target, source);    // where it came from
 
   // jsd: enemies lead their shots against the target
-  if (source->flags & MF_COUNTKILL) {
+  if (dsda_ExperimentProjectiles() && (source->flags & MF_COUNTKILL) != 0) {
     fixed_t qa, qb, qc, qd, vx, vy, bv;
     fixed_t pt0 = 0, pt1 = 0, qa2 = 0, qdp = 0;
 

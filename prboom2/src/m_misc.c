@@ -1058,6 +1058,9 @@ default_t defaults[] =
   { "dsda_player_name", { 0, &dsda_player_name }, { 0, "Anonymous" }, UL, UL, def_str,ss_chat },
   { "dsda_quickstart_cache_tics", { &dsda_quickstart_cache_tics }, { 0 }, 0, 35, def_int, ss_stat },
 
+  { "DSDA-Doom experiments", { NULL }, { 0 }, UL, UL, def_none, ss_none },
+  { "dsda_exp_projectiles", { (int *) &dsda_exp_projectiles }, { 1 }, 0, 1, def_bool, ss_stat },
+
   // NSM
   {"Video capture encoding settings",{NULL},{0},UL,UL,def_none,ss_none},
   {"cap_soundcommand",{NULL, &cap_soundcommand},{0,"ffmpeg -f s16le -ar %s -ac 2 -i - -c:a libopus -y temp_a.nut"},UL,UL,def_str,ss_none},

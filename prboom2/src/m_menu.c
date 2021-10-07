@@ -3174,7 +3174,7 @@ extern int detect_voices, realtic_clock_rate, tran_filter_pct;
 setup_menu_t gen_settings1[], gen_settings2[], gen_settings3[];
 setup_menu_t gen_settings4[], gen_settings5[], gen_settings6[];
 setup_menu_t gen_settings7[], gen_settings8[];
-setup_menu_t dsda_gen_settings[];
+setup_menu_t dsda_gen_settings1[], dsda_gen_settings2[];
 
 setup_menu_t* gen_settings[] =
 {
@@ -3186,7 +3186,8 @@ setup_menu_t* gen_settings[] =
   gen_settings6,
   gen_settings7,
   gen_settings8,
-  dsda_gen_settings,
+  dsda_gen_settings1,
+  dsda_gen_settings2,
   NULL
 };
 
@@ -3435,11 +3436,11 @@ setup_menu_t gen_settings8[] = { // General Settings screen4
   {"Blend Animations",           S_YESNO,  m_null, G_X, G_Y+19*8, {"gl_blend_animations"}},
 
   {"<- PREV",S_SKIP|S_PREV,m_null,KB_PREV,KB_Y+20*8, {gen_settings7}},
-  {"NEXT ->",S_SKIP|S_NEXT,m_null,KB_NEXT,KB_Y+20*8, {dsda_gen_settings}},
+  {"NEXT ->",S_SKIP|S_NEXT,m_null,KB_NEXT,KB_Y+20*8, {dsda_gen_settings1}},
   {0,S_SKIP|S_END,m_null}
 };
 
-setup_menu_t dsda_gen_settings[] = {
+setup_menu_t dsda_gen_settings1[] = {
   { "DSDA-Doom Settings", S_SKIP | S_TITLE, m_null, G_X, G_Y + 1 * 8 },
   { "Strict Mode", S_YESNO, m_dsda, G_X, G_Y + 2 * 8, { "dsda_strict_mode" }, 0 },
   { "Cycle Ghost Colors", S_YESNO, m_null, G_X, G_Y + 3 * 8, { "dsda_cycle_ghost_colors" } },
@@ -3461,6 +3462,15 @@ setup_menu_t dsda_gen_settings[] = {
   { "Quickstart Cache Tics", S_NUM, m_null, G_X, G_Y + 19 * 8, { "dsda_quickstart_cache_tics" } },
 
   { "<- PREV", S_SKIP | S_PREV, m_null, KB_PREV, KB_Y + 20 * 8, { gen_settings8 } },
+  {"NEXT ->",S_SKIP|S_NEXT,m_null,KB_NEXT,KB_Y+20*8, {dsda_gen_settings2}},
+  { 0, S_SKIP | S_END, m_null }
+};
+
+setup_menu_t dsda_gen_settings2[] = {
+  { "DSDA-Doom Experiments", S_SKIP | S_TITLE, m_null, G_X, G_Y + 1 * 8 },
+  { "Projectiles lead targets", S_YESNO, m_null, G_X, G_Y + 2 * 8, { "dsda_exp_projectiles" }, 0 },
+
+  { "<- PREV", S_SKIP | S_PREV, m_null, KB_PREV, KB_Y + 20 * 8, { dsda_gen_settings1 } },
   { 0, S_SKIP | S_END, m_null }
 };
 

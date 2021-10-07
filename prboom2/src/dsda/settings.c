@@ -51,6 +51,8 @@ int dsda_hide_horns;
 int dsda_skip_quit_prompt;
 int dsda_show_split_data;
 
+int dsda_exp_projectiles;
+
 void dsda_InitSettings(void) {
   int i;
 
@@ -310,4 +312,8 @@ dboolean dsda_SkipWipe(void) {
   }
 
   return !render_wipescreen || hexen;
+}
+
+dboolean dsda_ExperimentProjectiles(void) {
+  return dsda_exp_projectiles;
 }

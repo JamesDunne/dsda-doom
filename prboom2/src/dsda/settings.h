@@ -62,6 +62,8 @@ extern int dsda_subframes;
 extern int dsda_quickstart_cache_tics;
 extern const char* dsda_player_name;
 
+extern int dsda_exp_projectiles;
+
 void dsda_InitSettings(void);
 void dsda_ResetTransient(dsda_setting_t* setting);
 void dsda_ToggleSetting(dsda_setting_identifier_t id);
@@ -101,5 +103,7 @@ int dsda_AutoKeyFrameDepth(void);
 void dsda_SkipNextWipe(void);
 dboolean dsda_PendingSkipWipe(void);
 dboolean dsda_SkipWipe(void);
+
+dboolean dsda_ExperimentProjectiles(void);
 
 #endif
