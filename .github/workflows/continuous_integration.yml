@@ -39,7 +39,7 @@ jobs:
           }
         - {
             name: "macOS Clang",
-            os: macos-10.15,
+            os: macos-10.14,
             build_type: "Release",
             extra_options: "",
             package_name: "macos"
@@ -87,13 +87,14 @@ jobs:
         cd build
         mkdir package
         if [[ "${{ runner.os }}" == 'Windows' ]]; then
-          cp ${{ matrix.config.build_type }}/dsda-doom.exe ${{ matrix.config.build_type }}/dsda-doom-game-server.exe dsda-doom.wad package
+          cp ${{ matrix.config.build_type }}/dsda-doom.exe dsda-doom.wad package
         elif [[ "${{ runner.os }}" == 'macOS' ]]; then
           cp -R Launcher.app package
         else
-          cp dsda-doom dsda-doom-game-server dsda-doom.wad package
+          cp dsda-doom dsda-doom.wad package
         fi
         cp config.h package
+
     - name: Upload Package
       uses: actions/upload-artifact@v1
       with:
